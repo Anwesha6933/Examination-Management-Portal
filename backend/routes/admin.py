@@ -8,6 +8,7 @@ from backend.helpers import (EXAM_TYPES, RUBRIC_EDITABLE, STAGES, clean, course_
                              signup_problem, slot_problem, stage_problem)
 from backend.models import (Booking, Course, Exam, ExamSlot, Examiner, Rubric,
                             Student, User, db)
+from sqlalchemy import or_
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 admin_bp.before_request(role_required("admin"))
@@ -477,3 +478,85 @@ def publish_results(exam_id):
         db.session.commit()
         flash("Results published. Students can see their marks now.", "success")
     return redirect(url_for("admin.exam_detail", exam_id=exam.id))
+
+# ================= Students and history (M8) =================
+@admin_bp.route("/students")
+def students():
+    q = clean(request.args.get("q"))
+    exam_id = read_int(request.args.get("exam_id"))
+    status = request.args.get("status", "")
+    if status not in ("Booked", "Cancelled", "None"):
+        status = ""
+
+    query = Student.query.join(User)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(User.name.ilike(like), User.email.ilike(like),
+                                 Student.roll_number.ilike(like)))
+
+    rows = []
+    for s in query.order_by(User.name).all():
+        items = [b for b in s.bookings if not exam_id or b.slot.exam_id == exam_id]
+        booked = [b for b in items if b.status == "Booked"]
+        cancelled = [b for b in items if b.status == "Cancelled"]
+        if status == "Booked" and not booked:
+            continue
+        if status == "Cancelled" and not cancelled:
+            continue
+        if status == "None" and booked:
+            continue
+        rows.append({"student": s, "booked": len(booked), "cancelled": len(cancelled)})
+
+    return render_template("admin/students.html", rows=rows, q=q, exam_id=exam_id,
+                           status=status, exams=Exam.query.order_by(Exam.title).all())
+
+
+@admin_bp.route("/students/<int:student_id>")
+def student_detail(student_id):
+    student = db.get_or_404(Student, student_id)
+    history = sorted(student.bookings, key=lambda b: (b.created_at, b.id), reverse=True)
+    return render_template("admin/student_detail.html", student=student, history=history)
+
+
+# ================= Search (M8) =================
+@admin_bp.route("/search")
+def search():
+    q = clean(request.args.get("q"))
+    found = {"students": [], "examiners": [], "exams": [], "bookings": []}
+
+    if q:
+        like = f"%{q}%"
+        num = read_int(q)
+
+        cond = [User.name.ilike(like), User.email.ilike(like), Student.roll_number.ilike(like)]
+        if num is not None:
+            cond.append(Student.id == num)
+        found["students"] = (Student.query.join(User).filter(or_(*cond))
+                             .order_by(User.name).limit(50).all())
+
+        cond = [User.name.ilike(like), User.email.ilike(like), Examiner.department.ilike(like)]
+        if num is not None:
+            cond.append(Examiner.id == num)
+        found["examiners"] = (Examiner.query.join(User).filter(or_(*cond))
+                              .order_by(User.name).limit(50).all())
+
+        cond = [Exam.title.ilike(like), Course.code.ilike(like), Course.name.ilike(like)]
+        if num is not None:
+            cond.append(Exam.id == num)
+        found["exams"] = (Exam.query.join(Course).filter(or_(*cond))
+                          .order_by(Exam.title).limit(50).all())
+
+        cond = [User.name.ilike(like), Student.roll_number.ilike(like), Exam.title.ilike(like)]
+        if num is not None:
+            cond.append(Booking.id == num)
+        found["bookings"] = (
+            Booking.query
+            .join(Student, Booking.student_id == Student.id)
+            .join(User, Student.user_id == User.id)
+            .join(ExamSlot, Booking.slot_id == ExamSlot.id)
+            .join(Exam, ExamSlot.exam_id == Exam.id)
+            .filter(or_(*cond))
+            .order_by(Booking.id.desc()).limit(50).all())
+
+    total = sum(len(v) for v in found.values())
+    return render_template("admin/search.html", q=q, found=found, total=total)

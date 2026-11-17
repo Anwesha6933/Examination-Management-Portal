@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="text-indigo mb-3">Search</h3>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="d-flex gap-2">
+    <input name="q" class="form-control" value="{{ q }}" autofocus
+           placeholder="Name, email, roll number, exam title, course code or ID">
+    <button class="btn btn-indigo">Search</button>
+  </div>
+</form>
+
+{% if q %}
+<p class="text-muted">{{ total }} result{{ 's' if total != 1 }} for "{{ q }}".</p>
+
+{% if found.students %}
+<div class="card mb-3">
+  <div class="card-header bg-white"><strong class="text-indigo">Students ({{ found.students|length }})</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>ID</th><th>Name</th><th>Roll number</th><th>Email</th><th></th></tr></thead>
+    <tbody>
+      {% for s in found.students %}
+      <tr><td>{{ s.id }}</td><td>{{ s.user.name }}</td><td>{{ s.roll_number }}</td><td>{{ s.user.email }}</td>
+        <td class="text-end"><a href="{{ url_for('admin.student_detail', student_id=s.id) }}" class="btn btn-sm btn-outline-secondary">History</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if found.examiners %}
+<div class="card mb-3">
+  <div class="card-header bg-white"><strong class="text-indigo">Examiners ({{ found.examiners|length }})</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for e in found.examiners %}
+      <tr><td>{{ e.id }}</td><td>{{ e.user.name }}</td><td>{{ e.department }}</td>
+        <td><span class="badge bg-{{ e.status|badge }}">{{ e.status }}</span></td>
+        <td class="text-end"><a href="{{ url_for('admin.examiner_detail', examiner_id=e.id) }}" class="btn btn-sm btn-outline-secondary">Open</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if found.exams %}
+<div class="card mb-3">
+  <div class="card-header bg-white"><strong class="text-indigo">Examinations ({{ found.exams|length }})</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>ID</th><th>Title</th><th>Course</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for e in found.exams %}
+      <tr><td>{{ e.id }}</td><td>{{ e.title }}</td><td>{{ e.course.code }}</td>
+        <td><span class="badge bg-{{ e.status|badge }}">{{ e.status }}</span></td>
+        <td class="text-end"><a href="{{ url_for('admin.exam_detail', exam_id=e.id) }}" class="btn btn-sm btn-outline-secondary">Open</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if found.bookings %}
+<div class="card mb-3">
+  <div class="card-header bg-white"><strong class="text-indigo">Bookings ({{ found.bookings|length }})</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>ID</th><th>Student</th><th>Examination</th><th>Date</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for b in found.bookings %}
+      <tr><td>{{ b.id }}</td>
+        <td>{{ b.student.user.name }} <span class="text-muted small">({{ b.student.roll_number }})</span></td>
+        <td>{{ b.slot.exam.title }}</td><td>{{ b.slot.slot_date }}</td>
+        <td><span class="badge bg-{{ b.status|badge }}">{{ b.status }}</span></td>
+        <td class="text-end"><a href="{{ url_for('admin.student_detail', student_id=b.student_id) }}" class="btn btn-sm btn-outline-secondary">Student</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if not total %}
+<div class="text-center text-muted py-4">Nothing matched. Try a shorter word or part of a name.</div>
+{% endif %}
+{% endif %}
+{% endblock %}

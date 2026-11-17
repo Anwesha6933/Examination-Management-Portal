@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="text-indigo mb-3">Students</h3>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-2">
+    <div class="col-md-4"><input name="q" class="form-control" placeholder="Name, email or roll number" value="{{ q }}"></div>
+    <div class="col-md-3">
+      <select name="exam_id" class="form-select">
+        <option value="">All examinations</option>
+        {% for e in exams %}
+        <option value="{{ e.id }}" {% if exam_id == e.id %}selected{% endif %}>{{ e.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="status" class="form-select">
+        <option value="">Any booking status</option>
+        <option value="Booked" {% if status == 'Booked' %}selected{% endif %}>Booked</option>
+        <option value="Cancelled" {% if status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+        <option value="None" {% if status == 'None' %}selected{% endif %}>Not booked</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button class="btn btn-indigo">Filter</button>
+      <a href="{{ url_for('admin.students') }}" class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Name</th><th>Roll number</th><th>Email</th><th>Active bookings</th><th>Cancelled</th><th></th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.student.user.name }}</td>
+        <td>{{ r.student.roll_number }}</td>
+        <td>{{ r.student.user.email }}</td>
+        <td>{{ r.booked }}</td>
+        <td>{{ r.cancelled }}</td>
+        <td class="text-end"><a href="{{ url_for('admin.student_detail', student_id=r.student.id) }}" class="btn btn-sm btn-outline-secondary">History</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No students match.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small text-muted mt-2">{{ rows|length }} student{{ 's' if rows|length != 1 }} shown.
+  {% if exam_id %}Booking counts are for the selected examination only.{% endif %}</p>
+{% endblock %}

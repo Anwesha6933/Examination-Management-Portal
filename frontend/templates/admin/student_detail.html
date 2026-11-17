@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4 mb-3">
+  <h4 class="text-indigo mb-1">{{ student.user.name }}</h4>
+  <table class="table table-sm mt-2 mb-0">
+    <tr><th>Roll number</th><td>{{ student.roll_number }}</td></tr>
+    <tr><th>Email</th><td>{{ student.user.email }}</td></tr>
+    <tr><th>Phone</th><td>{{ student.phone or '-' }}</td></tr>
+    <tr><th>Registered</th><td>{{ student.user.created_at.strftime('%d %b %Y') }}</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header bg-white"><strong class="text-indigo">Booking history</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Examination</th><th>Date</th><th>Time</th><th>Examiner</th><th>Booked on</th><th>Status</th><th>Result</th></tr></thead>
+    <tbody>
+      {% for b in history %}
+      <tr>
+        <td><a href="{{ url_for('admin.exam_detail', exam_id=b.slot.exam_id) }}">{{ b.slot.exam.title }}</a></td>
+        <td>{{ b.slot.slot_date }}</td>
+        <td>{{ b.slot.start_time.strftime('%H:%M') }} - {{ b.slot.end_time.strftime('%H:%M') }}</td>
+        <td>{{ b.slot.examiner.user.name }}</td>
+        <td>{{ b.created_at.strftime('%d %b %Y') }}</td>
+        <td><span class="badge bg-{{ b.status|badge }}">{{ b.status }}</span></td>
+        <td>
+          {% if b.evaluation %}
+            {{ '%g' % b.evaluation.total_marks }} / {{ b.slot.exam.max_marks }}
+            <span class="badge bg-{{ 'success' if b.evaluation.is_published else 'warning' }}">
+              {{ 'Published' if b.evaluation.is_published else 'Not published' }}</span>
+          {% else %}-{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-muted py-4">This student has no bookings.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<a href="{{ url_for('admin.students') }}" class="btn btn-link mt-2">Back to students</a>
+{% endblock %}
