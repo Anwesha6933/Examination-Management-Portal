@@ -261,3 +261,43 @@ def booking_problem(student, slot):
     if slot.available_seats <= 0 or slot.status == "Full":
         return "This slot is full."
     return None
+# ---------- M7: evaluation and results ----------
+def evaluation_block(booking):
+    """Returns a message if this booking cannot be graded right now, else None."""
+    if booking.status != "Booked":
+        return "Only active bookings can be evaluated."
+    if booking.slot.exam.status != "Closed":
+        return "Evaluation opens when the admin moves the examination to Closed."
+    if booking.evaluation and booking.evaluation.is_published:
+        return "Results are published, so this evaluation is locked."
+    return None
+
+
+def read_scores(exam, form):
+    """Reads one marks box and one remark box per rubric criterion.
+    Returns (rows, None) or (None, error message)."""
+    rows = []
+    for r in exam.rubric:
+        marks = read_float(clean(form.get(f"marks_{r.id}")))
+        remark = clean(form.get(f"remark_{r.id}"))
+        if marks is None:
+            return None, f"Enter marks for '{r.name}'."
+        if marks < 0 or marks > r.max_marks:
+            return None, f"Marks for '{r.name}' must be between 0 and {r.max_marks:g}."
+        if len(remark) > 255:
+            return None, f"The remark for '{r.name}' is too long (255 characters at most)."
+        rows.append((r, marks, remark or None))
+    return rows, None
+
+
+def exam_bookings(exam):
+    """All active bookings of an exam."""
+    return (Booking.query.join(ExamSlot)
+            .filter(ExamSlot.exam_id == exam.id, Booking.status == "Booked").all())
+
+
+def result_stats(exam):
+    bookings = exam_bookings(exam)
+    evaluated = [b for b in bookings if b.evaluation]
+    published = [b for b in evaluated if b.evaluation.is_published]
+    return {"booked": len(bookings), "evaluated": len(evaluated), "published": len(published)}

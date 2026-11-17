@@ -36,6 +36,9 @@
         <td>{{ s.capacity }}</td><td>{{ s.available_seats }}</td>
         <td><span class="badge bg-{{ s.status|badge }}">{{ s.status }}</span></td>
         <td class="text-end">
+          {% if s.status != 'Cancelled' %}
+          <a href="{{ url_for('examiner.slot_detail', slot_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Students</a>
+          {% endif %}
           {% if can_edit and s.status != 'Cancelled' and not s.bookings %}
           <a href="{{ url_for('examiner.slot_edit', slot_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
           <form method="post" action="{{ url_for('examiner.slot_delete', slot_id=s.id) }}" class="d-inline">

@@ -1,13 +1,11 @@
+import csv
+import io
 from datetime import date
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import (Blueprint, Response, abort, flash, redirect, render_template,
+                   request, url_for)
 from flask_login import current_user
 from sqlalchemy import or_
-
-from backend.decorators import role_required
-from backend.helpers import (EXAM_TYPES, active_booking, booking_problem, can_book,
-                             can_cancel, clean, read_int, recount_seats)
-from backend.models import Booking, Course, Evaluation, Exam, ExamSlot, db
 
 student_bp = Blueprint("student", __name__, url_prefix="/student")
 student_bp.before_request(role_required("student"))
@@ -157,3 +155,48 @@ def bookings():
             .order_by(Booking.created_at.desc(), Booking.id.desc()).all())
     return render_template("student/bookings.html", bookings=rows,
                            cancellable={b.id for b in rows if can_cancel(b)})
+# ================= Results (M7) =================
+def _published():
+    return (Evaluation.query.join(Booking)
+            .filter(Booking.student_id == me().id, Evaluation.is_published.is_(True))
+            .order_by(Evaluation.evaluated_at.desc()).all())
+
+
+def _csv_safe(value):
+    """Stops a spreadsheet from running text that starts like a formula."""
+    text = "" if value is None else str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
+
+
+@student_bp.route("/results")
+def results():
+    return render_template("student/results.html", evaluations=_published())
+
+
+@student_bp.route("/results/<int:evaluation_id>")
+def result_detail(evaluation_id):
+    ev = db.get_or_404(Evaluation, evaluation_id)
+    if ev.booking.student_id != me().id or not ev.is_published:   # own and published only
+        abort(404)
+    return render_template("student/result_detail.html", ev=ev,
+                           slot=ev.booking.slot, exam=ev.booking.slot.exam)
+
+
+@student_bp.route("/results/scorecard.csv")
+def scorecard():
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["Roll number", "Name", "Examination", "Course", "Date", "Examiner",
+                     "Criterion", "Marks", "Max marks", "Remarks"])
+    for ev in _published():
+        slot = ev.booking.slot
+        exam = slot.exam
+        base = [me().roll_number, current_user.name, _csv_safe(exam.title), exam.course.code,
+                slot.slot_date, _csv_safe(slot.examiner.user.name)]
+        for s in ev.scores:
+            writer.writerow(base + [_csv_safe(s.rubric.name), f"{s.marks:g}",
+                                    f"{s.rubric.max_marks:g}", _csv_safe(s.remarks)])
+        writer.writerow(base + ["TOTAL", f"{ev.total_marks:g}", exam.max_marks,
+                                _csv_safe(ev.remarks)])
+    return Response(out.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=scorecard.csv"})

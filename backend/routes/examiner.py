@@ -1,10 +1,12 @@
+from datetime import datetime
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from backend.decorators import role_required
-from backend.helpers import (can_create_slots, can_edit_slots, clean,
-                             read_slot_form, slot_problem)
-from backend.models import Booking, Exam, ExamSlot, db
+from backend.helpers import (can_create_slots, can_edit_slots, clean, evaluation_block,
+                             read_scores, read_slot_form, slot_problem)
+from backend.models import Booking, Evaluation, Exam, ExamSlot, Score, db
 
 examiner_bp = Blueprint("examiner", __name__, url_prefix="/examiner")
 examiner_bp.before_request(role_required("examiner"))
@@ -177,3 +179,53 @@ def slot_delete(slot_id):
         db.session.commit()
         flash("Slot removed.", "success")
     return redirect(url_for("examiner.exam_detail", exam_id=exam_id))
+# ================= Booked students and evaluation (M7) =================
+@examiner_bp.route("/slots/<int:slot_id>")
+def slot_detail(slot_id):
+    slot = _my_slot(slot_id)
+    rows = sorted((b for b in slot.bookings if b.status == "Booked"),
+                  key=lambda b: b.student.user.name)
+    return render_template("examiner/slot_detail.html", slot=slot, bookings=rows,
+                           gradable={b.id for b in rows if evaluation_block(b) is None})
+
+
+@examiner_bp.route("/bookings/<int:booking_id>/evaluate", methods=["GET", "POST"])
+def evaluate(booking_id):
+    booking = db.get_or_404(Booking, booking_id)
+    if booking.slot.examiner_id != me().id:      # own slots only
+        abort(404)
+
+    slot, exam = booking.slot, booking.slot.exam
+    block = evaluation_block(booking)            # checked on GET and POST
+    if block:
+        flash(block, "warning")
+        return redirect(url_for("examiner.slot_detail", slot_id=slot.id))
+
+    ev = booking.evaluation
+    form = {"remarks": ev.remarks or "" if ev else ""}
+    if ev:
+        for s in ev.scores:
+            form[f"marks_{s.rubric_id}"] = f"{s.marks:g}"
+            form[f"remark_{s.rubric_id}"] = s.remarks or ""
+
+    if request.method == "POST":
+        form = request.form
+        rows, problem = read_scores(exam, form)
+        remarks = clean(form.get("remarks"))
+        if problem:
+            flash(problem, "danger")
+        else:
+            if ev is None:
+                ev = Evaluation(booking_id=booking.id)
+                db.session.add(ev)
+            ev.scores.clear()                    # replace the old scores
+            db.session.flush()
+            for rubric, marks, remark in rows:
+                ev.scores.append(Score(rubric_id=rubric.id, marks=marks, remarks=remark))
+            ev.total_marks = sum(marks for _, marks, _ in rows)
+            ev.remarks = remarks or None
+            ev.evaluated_at = datetime.now()
+            db.session.commit()
+            flash(f"Evaluation saved. Total: {ev.total_marks:g} / {exam.max_marks}.", "success")
+            return redirect(url_for("examiner.slot_detail", slot_id=slot.id))
+    return render_template("examiner/evaluate.html", booking=booking, exam=exam, form=form)

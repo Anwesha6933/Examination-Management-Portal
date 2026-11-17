@@ -64,6 +64,22 @@
 
   <div class="col-12"><div class="card p-3">
     <h6 class="text-indigo">Assigned examiners</h6>
+      {% if exam.status in ('Closed', 'Completed') %}
+  <div class="col-12"><div class="card p-3">
+    <h6 class="text-indigo">Results</h6>
+    <p class="mb-2">
+      {{ stats.evaluated }} of {{ stats.booked }} booked students evaluated,
+      {{ stats.published }} published.
+    </p>
+    {% if stats.booked and stats.published < stats.booked %}
+    <form method="post" action="{{ url_for('admin.publish_results', exam_id=exam.id) }}">
+      <button class="btn btn-indigo">Publish results</button>
+    </form>
+    {% elif stats.booked %}
+    <div class="text-success">All results are published.</div>
+    {% endif %}
+  </div></div>
+  {% endif %}
     <form method="post" action="{{ url_for('admin.exam_assign', exam_id=exam.id) }}">
       {% for e in approved %}
       <div class="form-check">

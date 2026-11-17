@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-3">
+  <h3 class="text-indigo mb-1">{{ slot.exam.title }}</h3>
+  <span class="text-muted">{{ slot.slot_date }}, {{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}</span>
+  <span class="badge bg-{{ slot.exam.status|badge }} ms-2">{{ slot.exam.status }}</span>
+</div>
+
+{% if slot.exam.status != 'Closed' %}
+<div class="alert alert-secondary">Grading opens when the admin moves this examination to Closed.</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header bg-white"><strong class="text-indigo">Booked students</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Student</th><th>Roll number</th><th>Evaluation</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ b.student.user.name }}</td>
+        <td>{{ b.student.roll_number }}</td>
+        <td>
+          {% if not b.evaluation %}<span class="badge bg-warning">Pending</span>
+          {% elif b.evaluation.is_published %}<span class="badge bg-success">Published</span>
+          {% else %}<span class="badge bg-primary">Evaluated</span>{% endif %}
+        </td>
+        <td>{% if b.evaluation %}{{ '%g' % b.evaluation.total_marks }} / {{ slot.exam.max_marks }}{% else %}-{% endif %}</td>
+        <td class="text-end">
+          {% if b.id in gradable %}
+          <a href="{{ url_for('examiner.evaluate', booking_id=b.id) }}" class="btn btn-sm btn-indigo">
+            {{ 'Edit grade' if b.evaluation else 'Evaluate' }}</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-center text-muted py-4">No students have booked this slot.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<a href="{{ url_for('examiner.exam_detail', exam_id=slot.exam_id) }}" class="btn btn-link mt-2">Back to the examination</a>
+{% endblock %}

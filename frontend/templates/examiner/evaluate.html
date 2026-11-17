@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-9"><div class="card p-4">
+  <h4 class="text-indigo mb-1">Evaluate {{ booking.student.user.name }}</h4>
+  <p class="text-muted small">{{ booking.student.roll_number }} | {{ exam.title }} | maximum {{ exam.max_marks }} marks</p>
+
+  <form method="post">
+    <table class="table align-middle">
+      <thead><tr><th>Criterion</th><th style="width:130px">Marks</th><th>Remark (optional)</th></tr></thead>
+      <tbody>
+        {% for r in exam.rubric %}
+        <tr>
+          <td>{{ r.name }} <span class="text-muted small">(max {{ '%g' % r.max_marks }})</span></td>
+          <td><input type="number" step="any" min="0" max="{{ r.max_marks }}" name="marks_{{ r.id }}"
+                     class="form-control" value="{{ form.get('marks_' ~ r.id, '') }}" required></td>
+          <td><input name="remark_{{ r.id }}" maxlength="255" class="form-control"
+                     value="{{ form.get('remark_' ~ r.id, '') }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="mb-3"><label class="form-label">Overall remarks (optional)</label>
+      <textarea name="remarks" class="form-control" rows="3">{{ form.get('remarks', '') }}</textarea></div>
+    <p class="small text-muted">The total is added up automatically when you save.</p>
+    <button class="btn btn-indigo">Save evaluation</button>
+    <a href="{{ url_for('examiner.slot_detail', slot_id=booking.slot_id) }}" class="btn btn-link">Cancel</a>
+  </form>
+</div></div></div>
+{% endblock %}

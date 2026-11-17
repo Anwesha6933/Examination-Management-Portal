@@ -3,9 +3,9 @@ from werkzeug.security import generate_password_hash
 
 from backend.decorators import role_required
 from backend.helpers import (EXAM_TYPES, RUBRIC_EDITABLE, STAGES, clean, course_problem,
-                             exam_problem, read_exam_form, read_float, read_int,
-                             recount_seats, rubric_problem, signup_problem,
-                             slot_problem, stage_problem)
+                             exam_bookings, exam_problem, read_exam_form, read_float,
+                             read_int, recount_seats, result_stats, rubric_problem,
+                             signup_problem, slot_problem, stage_problem)
 from backend.models import (Booking, Course, Exam, ExamSlot, Examiner, Rubric,
                             Student, User, db)
 
@@ -167,7 +167,8 @@ def exam_detail(exam_id):
         "admin/exam_detail.html", exam=exam, next_stage=next_stage,
         rubric_total=sum(r.max_marks for r in exam.rubric),
         approved=approved, assigned_ids={e.id for e in exam.examiners},
-        rubric_editable=exam.status in RUBRIC_EDITABLE)
+        rubric_editable=exam.status in RUBRIC_EDITABLE,
+        stats=result_stats(exam))
 
 
 @admin_bp.route("/exams/<int:exam_id>/delete", methods=["POST"])
@@ -455,3 +456,24 @@ def reschedule(booking_id):
             flash("Booking rescheduled.", "success")
             return redirect(url_for("admin.bookings"))
     return render_template("admin/reschedule.html", booking=booking, exam=exam, targets=targets)
+# ================= Publish results (M7) =================
+@admin_bp.route("/exams/<int:exam_id>/publish", methods=["POST"])
+def publish_results(exam_id):
+    exam = db.get_or_404(Exam, exam_id)
+    stats = result_stats(exam)
+
+    if exam.status not in ("Closed", "Completed"):
+        flash("Results can be published only after the examination is Closed.", "warning")
+    elif stats["booked"] == 0:
+        flash("There are no active bookings to publish.", "warning")
+    elif stats["evaluated"] < stats["booked"]:
+        left = stats["booked"] - stats["evaluated"]
+        flash(f"{left} student{'s' if left != 1 else ''} still to be evaluated.", "danger")
+    elif stats["published"] == stats["booked"]:
+        flash("Results are already published.", "info")
+    else:
+        for b in exam_bookings(exam):
+            b.evaluation.is_published = True
+        db.session.commit()
+        flash("Results published. Students can see their marks now.", "success")
+    return redirect(url_for("admin.exam_detail", exam_id=exam.id))
