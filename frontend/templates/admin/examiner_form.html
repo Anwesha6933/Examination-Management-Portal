@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card p-4">
+  <h4 class="text-indigo mb-3">Add examiner</h4>
+  <form method="post">
+    <div class="mb-3"><label class="form-label">Full name</label>
+      <input name="name" class="form-control" value="{{ form.get('name', '') }}" required></div>
+    <div class="mb-3"><label class="form-label">Email</label>
+      <input type="email" name="email" class="form-control" value="{{ form.get('email', '') }}" required></div>
+    <div class="mb-3"><label class="form-label">Password</label>
+      <input type="password" name="password" class="form-control" required></div>
+    <div class="mb-3"><label class="form-label">Department</label>
+      <input name="department" class="form-control" value="{{ form.get('department', '') }}" required></div>
+    <div class="mb-3"><label class="form-label">Phone (optional)</label>
+      <input name="phone" class="form-control" value="{{ form.get('phone', '') }}"></div>
+    <button class="btn btn-indigo">Add and approve</button>
+    <a href="{{ url_for('admin.examiners') }}" class="btn btn-link">Cancel</a>
+  </form>
+</div></div></div>
+{% endblock %}

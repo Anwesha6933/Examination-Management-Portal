@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card p-4">
+  <h4 class="text-indigo mb-1">{{ 'Edit criterion' if item else 'New criterion' }}</h4>
+  <p class="text-muted small">{{ exam.title }} (maximum {{ exam.max_marks }} marks)</p>
+  <form method="post">
+    <div class="mb-3"><label class="form-label">Criterion name</label>
+      <input name="name" class="form-control" value="{{ form.get('name', '') }}" required></div>
+    <div class="mb-3"><label class="form-label">Marks</label>
+      <input type="number" step="any" name="max_marks" class="form-control" value="{{ form.get('max_marks', '') }}" required></div>
+    <div class="mb-3"><label class="form-label">Weightage % (optional)</label>
+      <input type="number" step="any" name="weightage" class="form-control" value="{{ form.get('weightage', '') }}"></div>
+    <button class="btn btn-indigo">Save</button>
+    <a href="{{ url_for('admin.exam_detail', exam_id=exam.id) }}" class="btn btn-link">Cancel</a>
+  </form>
+</div></div></div>
+{% endblock %}

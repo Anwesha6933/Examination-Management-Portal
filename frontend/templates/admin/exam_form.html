@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-8"><div class="card p-4">
+  <h4 class="text-indigo mb-3">{{ 'Edit examination' if exam else 'New examination' }}</h4>
+  <form method="post">
+    <div class="row">
+      <div class="col-md-6 mb-3"><label class="form-label">Course</label>
+        <select name="course_id" class="form-select" required>
+          <option value="">Choose...</option>
+          {% for c in courses %}
+          <option value="{{ c.id }}" {% if form.get('course_id')|string == c.id|string %}selected{% endif %}>{{ c.code }} - {{ c.name }}</option>
+          {% endfor %}
+        </select></div>
+      <div class="col-md-6 mb-3"><label class="form-label">Type</label>
+        <select name="exam_type" class="form-select" required>
+          {% for t in exam_types %}
+          <option {% if form.get('exam_type') == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select></div>
+    </div>
+    <div class="mb-3"><label class="form-label">Title</label>
+      <input name="title" class="form-control" value="{{ form.get('title', '') }}" required></div>
+    <div class="row">
+      <div class="col-md-6 mb-3"><label class="form-label">Duration (minutes)</label>
+        <input type="number" name="duration_minutes" class="form-control" value="{{ form.get('duration_minutes', '') }}" required></div>
+      <div class="col-md-6 mb-3"><label class="form-label">Maximum marks</label>
+        <input type="number" name="max_marks" class="form-control" value="{{ form.get('max_marks', '') }}" required></div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3"><label class="form-label">Slot creation starts</label>
+        <input type="date" name="slot_creation_start" class="form-control" value="{{ form.get('slot_creation_start', '') }}" required></div>
+      <div class="col-md-6 mb-3"><label class="form-label">Slot creation ends</label>
+        <input type="date" name="slot_creation_end" class="form-control" value="{{ form.get('slot_creation_end', '') }}" required></div>
+      <div class="col-md-6 mb-3"><label class="form-label">Booking starts</label>
+        <input type="date" name="booking_start" class="form-control" value="{{ form.get('booking_start', '') }}" required></div>
+      <div class="col-md-6 mb-3"><label class="form-label">Booking ends</label>
+        <input type="date" name="booking_end" class="form-control" value="{{ form.get('booking_end', '') }}" required></div>
+    </div>
+    <button class="btn btn-indigo">Save</button>
+    <a href="{{ url_for('admin.exams') }}" class="btn btn-link">Cancel</a>
+  </form>
+</div></div></div>
+{% endblock %}

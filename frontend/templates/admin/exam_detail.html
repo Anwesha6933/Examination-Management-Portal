@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h3 class="text-indigo mb-1">{{ exam.title }}</h3>
+    <span class="badge bg-{{ exam.status|badge }}">{{ exam.status }}</span>
+    <span class="text-muted ms-2">{{ exam.course.code }} - {{ exam.course.name }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    {% if exam.status not in ('Closed', 'Completed') %}
+    <a href="{{ url_for('admin.exam_edit', exam_id=exam.id) }}" class="btn btn-outline-secondary">Edit</a>
+    {% endif %}
+    {% if exam.status == 'Draft' %}
+    <form method="post" action="{{ url_for('admin.exam_delete', exam_id=exam.id) }}">
+      <button class="btn btn-outline-danger">Delete</button></form>
+    {% endif %}
+    {% if next_stage %}
+    <form method="post" action="{{ url_for('admin.exam_status', exam_id=exam.id) }}">
+      <button class="btn btn-indigo">Move to {{ next_stage }}</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5"><div class="card p-3 h-100">
+    <h6 class="text-indigo">Details</h6>
+    <table class="table table-sm mb-0">
+      <tr><th>Type</th><td>{{ exam.exam_type }}</td></tr>
+      <tr><th>Duration</th><td>{{ exam.duration_minutes }} min</td></tr>
+      <tr><th>Maximum marks</th><td>{{ exam.max_marks }}</td></tr>
+      <tr><th>Slot creation</th><td>{{ exam.slot_creation_start }} to {{ exam.slot_creation_end }}</td></tr>
+      <tr><th>Booking</th><td>{{ exam.booking_start }} to {{ exam.booking_end }}</td></tr>
+    </table>
+  </div></div>
+
+  <div class="col-lg-7"><div class="card p-3 h-100">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="text-indigo mb-0">Rubric</h6>
+      {% if rubric_editable %}
+      <a href="{{ url_for('admin.rubric_new', exam_id=exam.id) }}" class="btn btn-sm btn-indigo">Add criterion</a>
+      {% endif %}
+    </div>
+    <table class="table table-sm align-middle mb-1">
+      <thead><tr><th>Criterion</th><th>Marks</th><th>Weightage</th><th></th></tr></thead>
+      <tbody>
+        {% for r in exam.rubric %}
+        <tr>
+          <td>{{ r.name }}</td><td>{{ '%g' % r.max_marks }}</td><td>{{ '%g' % r.weightage }}%</td>
+          <td class="text-end">
+            {% if rubric_editable %}
+            <a href="{{ url_for('admin.rubric_edit', rubric_id=r.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <form method="post" action="{{ url_for('admin.rubric_delete', rubric_id=r.id) }}" class="d-inline">
+              <button class="btn btn-sm btn-outline-danger">Remove</button></form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted text-center">No criteria yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="small text-muted">Total {{ '%g' % rubric_total }} of {{ exam.max_marks }} marks</div>
+  </div></div>
+
+  <div class="col-12"><div class="card p-3">
+    <h6 class="text-indigo">Assigned examiners</h6>
+    <form method="post" action="{{ url_for('admin.exam_assign', exam_id=exam.id) }}">
+      {% for e in approved %}
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="examiner_ids" value="{{ e.id }}" id="ex{{ e.id }}"
+               {% if e.id in assigned_ids %}checked{% endif %}>
+        <label class="form-check-label" for="ex{{ e.id }}">{{ e.user.name }} <span class="text-muted small">({{ e.department }})</span></label>
+      </div>
+      {% else %}
+      <p class="text-muted">No approved examiners yet.</p>
+      {% endfor %}
+      {% if approved %}<button class="btn btn-sm btn-indigo mt-2">Save examiners</button>{% endif %}
+    </form>
+  </div></div>
+</div>
+{% endblock %}

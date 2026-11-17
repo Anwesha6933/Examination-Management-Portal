@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card p-4">
+  <h4 class="text-indigo mb-3">{{ 'Edit course' if course else 'New course' }}</h4>
+  <form method="post">
+    <div class="mb-3"><label class="form-label">Code</label>
+      <input name="code" class="form-control" value="{{ form.get('code', '') }}" required></div>
+    <div class="mb-3"><label class="form-label">Name</label>
+      <input name="name" class="form-control" value="{{ form.get('name', '') }}" required></div>
+    <div class="mb-3"><label class="form-label">Description</label>
+      <textarea name="description" class="form-control" rows="3">{{ form.get('description', '') }}</textarea></div>
+    <div class="mb-3"><label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        {% for s in ['Active', 'Inactive'] %}
+        <option {% if form.get('status') == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select></div>
+    <button class="btn btn-indigo">Save</button>
+    <a href="{{ url_for('admin.courses') }}" class="btn btn-link">Cancel</a>
+  </form>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+      <h4 class="text-indigo mb-1">{{ ex.user.name }}</h4>
+      <span class="badge bg-{{ ex.status|badge }}">{{ ex.status }}</span>
+    </div>
+    <div class="d-flex gap-2">
+      {% if ex.status in ('Pending', 'Rejected', 'Deactivated') %}
+      <form method="post" action="{{ url_for('admin.examiner_status', examiner_id=ex.id, action='approve') }}">
+        <button class="btn btn-indigo">{{ 'Reactivate' if ex.status == 'Deactivated' else 'Approve' }}</button></form>
+      {% endif %}
+      {% if ex.status == 'Pending' %}
+      <form method="post" action="{{ url_for('admin.examiner_status', examiner_id=ex.id, action='reject') }}">
+        <button class="btn btn-outline-danger">Reject</button></form>
+      {% endif %}
+      {% if ex.status == 'Approved' %}
+      <form method="post" action="{{ url_for('admin.examiner_status', examiner_id=ex.id, action='deactivate') }}">
+        <button class="btn btn-outline-danger">Deactivate</button></form>
+      {% endif %}
+    </div>
+  </div>
+  <table class="table table-sm mt-3 mb-3">
+    <tr><th>Email</th><td>{{ ex.user.email }}</td></tr>
+    <tr><th>Department</th><td>{{ ex.department }}</td></tr>
+    <tr><th>Phone</th><td>{{ ex.phone or '-' }}</td></tr>
+  </table>
+  <h6 class="text-indigo">Assigned examinations</h6>
+  <ul class="mb-0">
+    {% for e in ex.exams %}
+    <li><a href="{{ url_for('admin.exam_detail', exam_id=e.id) }}">{{ e.title }}</a> ({{ e.status }})</li>
+    {% else %}
+    <li class="text-muted">None yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+<a href="{{ url_for('admin.examiners') }}" class="btn btn-link mt-2">Back to examiners</a>
+{% endblock %}
