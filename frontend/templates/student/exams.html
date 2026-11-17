@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="text-indigo mb-3">Examinations</h3>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-2">
+    <div class="col-md-3"><input name="q" class="form-control" placeholder="Search title or course" value="{{ f.q }}"></div>
+    <div class="col-md-3">
+      <select name="course_id" class="form-select">
+        <option value="">All courses</option>
+        {% for c in courses %}
+        <option value="{{ c.id }}" {% if f.course_id == c.id %}selected{% endif %}>{{ c.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="exam_type" class="form-select">
+        <option value="">All types</option>
+        {% for t in exam_types %}
+        <option {% if f.exam_type == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="status" class="form-select">
+        <option value="">Any status</option>
+        {% for s in statuses %}
+        <option {% if f.status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button class="btn btn-indigo">Filter</button>
+      <a href="{{ url_for('student.exams') }}" class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Title</th><th>Course</th><th>Type</th><th>Booking window</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for e in exams %}
+      <tr>
+        <td>{{ e.title }}</td><td>{{ e.course.code }}</td><td>{{ e.exam_type }}</td>
+        <td>{{ e.booking_start }} to {{ e.booking_end }}</td>
+        <td><span class="badge bg-{{ e.status|badge }}">{{ e.status }}</span></td>
+        <td class="text-end"><a href="{{ url_for('student.exam_detail', exam_id=e.id) }}" class="btn btn-sm btn-outline-secondary">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No examinations match.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

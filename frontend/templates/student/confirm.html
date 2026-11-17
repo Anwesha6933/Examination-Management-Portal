@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card p-4">
+  <h4 class="text-indigo mb-3">Confirm your booking</h4>
+  <table class="table table-sm">
+    <tr><th>Examination</th><td>{{ exam.title }} ({{ exam.course.code }})</td></tr>
+    <tr><th>Date</th><td>{{ slot.slot_date }}</td></tr>
+    <tr><th>Time</th><td>{{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}</td></tr>
+    <tr><th>Examiner</th><td>{{ slot.examiner.user.name }}</td></tr>
+    <tr><th>Seats left</th><td>{{ slot.available_seats }}</td></tr>
+  </table>
+  <p class="small text-muted">You can hold one slot per examination. You can cancel until {{ exam.booking_end }}.</p>
+  <form method="post" class="d-flex gap-2">
+    <button class="btn btn-indigo">Confirm booking</button>
+    <a href="{{ url_for('student.exam_detail', exam_id=exam.id) }}" class="btn btn-outline-secondary">Back</a>
+  </form>
+</div></div></div>
+{% endblock %}

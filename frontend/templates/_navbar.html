@@ -14,7 +14,10 @@
           <li class="nav-item"><a class="nav-link" href="{{ url_for('examiner.exams') }}">My exams</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('examiner.profile') }}">Profile</a></li>
         {% elif current_user.role == 'student' %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('student.exams') }}">Examinations</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('student.bookings') }}">My bookings</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('student.profile') }}">Profile</a></li>
         {% endif %}
       {% endif %}
     </ul>

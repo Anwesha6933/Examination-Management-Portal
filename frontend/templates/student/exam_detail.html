@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-3">
+  <h3 class="text-indigo mb-1">{{ exam.title }}</h3>
+  <span class="badge bg-{{ exam.status|badge }}">{{ exam.status }}</span>
+  <span class="text-muted ms-2">{{ exam.course.code }} - {{ exam.course.name }}</span>
+</div>
+
+<div class="card p-3 mb-3">
+  <table class="table table-sm mb-0">
+    <tr><th>Type</th><td>{{ exam.exam_type }}</td></tr>
+    <tr><th>Duration</th><td>{{ exam.duration_minutes }} min</td></tr>
+    <tr><th>Maximum marks</th><td>{{ exam.max_marks }}</td></tr>
+    <tr><th>Booking window</th><td>{{ exam.booking_start }} to {{ exam.booking_end }}</td></tr>
+    <tr><th>Rubric</th><td>{% for r in exam.rubric %}{{ r.name }} ({{ '%g' % r.max_marks }}){{ ', ' if not loop.last }}{% endfor %}</td></tr>
+  </table>
+</div>
+
+{% if mine %}
+<div class="alert alert-success">
+  You are booked: {{ mine.slot.slot_date }}, {{ mine.slot.start_time.strftime('%H:%M') }}.
+  <a href="{{ url_for('student.bookings') }}">Manage in My bookings</a>
+</div>
+{% elif not open_now %}
+<div class="alert alert-secondary">Booking is not open for this examination right now.</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header bg-white"><strong class="text-indigo">Slots</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Date</th><th>Time</th><th>Examiner</th><th>Seats left</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for s in slots %}
+      <tr {% if mine and mine.slot_id == s.id %}class="table-success"{% endif %}>
+        <td>{{ s.slot_date }}</td>
+        <td>{{ s.start_time.strftime('%H:%M') }} - {{ s.end_time.strftime('%H:%M') }}</td>
+        <td>{{ s.examiner.user.name }}</td>
+        <td>{{ s.available_seats }} of {{ s.capacity }}</td>
+        <td><span class="badge bg-{{ s.status|badge }}">{{ s.status }}</span></td>
+        <td class="text-end">
+          {% if open_now and not mine and s.status == 'Available' %}
+          <a href="{{ url_for('student.book', slot_id=s.id) }}" class="btn btn-sm btn-indigo">Book</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No slots have been created for this examination.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<a href="{{ url_for('student.exams') }}" class="btn btn-link mt-2">Back to examinations</a>
+{% endblock %}

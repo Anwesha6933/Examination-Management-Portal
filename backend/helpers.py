@@ -2,7 +2,7 @@ import re
 from datetime import date, datetime
 
 from flask import url_for
-from backend.models import Course, ExamSlot, Student, User, db
+from backend.models import Booking, Course, ExamSlot, Student, User, db
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ROLL_RE = re.compile(r"^[A-Za-z0-9]{6,20}$")
@@ -212,4 +212,52 @@ def slot_problem(exam, examiner, v, slot_id=None):
     for other in same_day:
         if other.id != slot_id and v["start_time"] < other.end_time and other.start_time < v["end_time"]:
             return "This overlaps another slot of yours on the same day."
+    return None
+
+
+def can_book(exam, today=None):
+    """Booking works only in Booking Open status, inside the booking dates."""
+    today = today or date.today()
+    return (exam.status == "Booking Open"
+            and exam.booking_start <= today <= exam.booking_end)
+
+
+def can_cancel(booking, today=None):
+    """A student may cancel until the booking end date, while booking is still open."""
+    today = today or date.today()
+    exam = booking.slot.exam
+    return (booking.status == "Booked"
+            and exam.status == "Booking Open"
+            and today <= exam.booking_end)
+
+
+def active_booking(student, exam):
+    """The student's current (not cancelled) booking in this exam, or None."""
+    return (Booking.query.join(ExamSlot)
+            .filter(Booking.student_id == student.id,
+                    ExamSlot.exam_id == exam.id,
+                    Booking.status == "Booked")
+            .first())
+
+
+def recount_seats(slot):
+    """Recalculate seats from the bookings and flip Available/Full. Call after every change."""
+    taken = Booking.query.filter_by(slot_id=slot.id, status="Booked").count()
+    slot.available_seats = max(slot.capacity - taken, 0)
+    if slot.status != "Cancelled":
+        slot.status = "Full" if slot.available_seats == 0 else "Available"
+
+
+def booking_problem(student, slot):
+    """Returns a message if this student cannot book this slot, else None."""
+    exam = slot.exam
+    if slot.status == "Cancelled":
+        return "This slot has been cancelled."
+    if not can_book(exam):
+        return (f"Booking is not open for this examination "
+                f"(window: {exam.booking_start} to {exam.booking_end}).")
+    if active_booking(student, exam):
+        return "You already have a booking for this examination. Cancel it first to choose another slot."
+    if slot.available_seats <= 0 or slot.status == "Full":
+        return "This slot is full."
     return None

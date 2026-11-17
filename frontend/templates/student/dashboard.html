@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="text-indigo mb-3">Student dashboard</h3>
+<div class="row g-3 mb-4">
+  {% for label, count, color in tiles %}
+  <div class="col-6 col-md-4">
+    <div class="tile tile-{{ color }}"><div class="count">{{ count }}</div>{{ label }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header bg-white"><strong class="text-indigo">Upcoming exams</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Examination</th><th>Date</th><th>Time</th><th>Examiner</th></tr></thead>
+    <tbody>
+      {% for b in upcoming %}
+      <tr>
+        <td><a href="{{ url_for('student.exam_detail', exam_id=b.slot.exam_id) }}">{{ b.slot.exam.title }}</a></td>
+        <td>{{ b.slot.slot_date }}</td>
+        <td>{{ b.slot.start_time.strftime('%H:%M') }} - {{ b.slot.end_time.strftime('%H:%M') }}</td>
+        <td>{{ b.slot.examiner.user.name }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center text-muted py-4">Nothing booked yet.
+        <a href="{{ url_for('student.exams') }}">Browse examinations</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
