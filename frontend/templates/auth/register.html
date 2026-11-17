@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Register - Examly{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h4 class="mb-3 text-indigo">Create an account</h4>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label d-block">I am a</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="role" id="r1" value="student"
+                   {% if form.get('role', 'student') == 'student' %}checked{% endif %}>
+            <label class="form-check-label" for="r1">Student</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="role" id="r2" value="examiner"
+                   {% if form.get('role') == 'examiner' %}checked{% endif %}>
+            <label class="form-check-label" for="r2">Examiner</label>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Full name</label>
+          <input name="name" class="form-control" value="{{ form.get('name', '') }}" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" value="{{ form.get('email', '') }}" required>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Confirm password</label>
+            <input type="password" name="confirm" class="form-control" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Phone (optional)</label>
+          <input name="phone" class="form-control" value="{{ form.get('phone', '') }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Roll number <span class="text-muted small">(students only)</span></label>
+          <input name="roll_number" class="form-control" value="{{ form.get('roll_number', '') }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Department <span class="text-muted small">(examiners only)</span></label>
+          <input name="department" class="form-control" value="{{ form.get('department', '') }}">
+        </div>
+        <button class="btn btn-indigo w-100">Register</button>
+      </form>
+      <p class="mt-3 mb-0 small text-center">Already registered? <a href="{{ url_for('auth.login') }}">Login</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

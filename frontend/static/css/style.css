@@ -1,0 +1,23 @@
+:root {
+  --indigo: #4f46e5;
+  --indigo-dark: #3730a3;
+  --indigo-soft: #eef2ff;
+}
+
+body { background: #f5f6fb; }
+
+.bg-indigo { background-color: var(--indigo); }
+.text-indigo { color: var(--indigo); }
+
+.btn-indigo { background-color: var(--indigo); border-color: var(--indigo); color: #fff; }
+.btn-indigo:hover { background-color: var(--indigo-dark); border-color: var(--indigo-dark); color: #fff; }
+
+.card { border: 0; border-radius: 0.75rem; box-shadow: 0 2px 10px rgba(79, 70, 229, 0.08); }
+
+/* coloured count tiles, used on dashboards from M3 */
+.tile { border-radius: 0.75rem; padding: 1rem 1.25rem; color: #fff; }
+.tile .count { font-size: 2rem; font-weight: 700; }
+.tile-indigo { background: #4f46e5; }
+.tile-green  { background: #059669; }
+.tile-amber  { background: #d97706; }
+.tile-rose   { background: #e11d48; }

@@ -1,0 +1,31 @@
+<nav class="navbar navbar-expand navbar-dark bg-indigo">
+  <div class="container flex-wrap">
+    <a class="navbar-brand fw-bold" href="{{ url_for('auth.index') }}">Examly</a>
+
+    <ul class="navbar-nav me-auto">
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == 'admin' %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        {% elif current_user.role == 'examiner' and current_user.examiner.status == 'Approved' %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('examiner.dashboard') }}">Dashboard</a></li>
+        {% elif current_user.role == 'student' %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+        {% endif %}
+      {% endif %}
+    </ul>
+
+    <ul class="navbar-nav align-items-center">
+      {% if current_user.is_authenticated %}
+        <li class="nav-item text-white-50 me-3 small">{{ current_user.name }} ({{ current_user.role }})</li>
+        <li class="nav-item">
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            <button class="btn btn-sm btn-outline-light">Logout</button>
+          </form>
+        </li>
+      {% else %}
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Register</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</nav>
