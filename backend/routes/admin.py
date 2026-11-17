@@ -4,7 +4,8 @@ from werkzeug.security import generate_password_hash
 from backend.decorators import role_required
 from backend.helpers import (EXAM_TYPES, RUBRIC_EDITABLE, STAGES, clean, course_problem,
                              exam_problem, read_exam_form, read_float, read_int,
-                             rubric_problem, signup_problem, stage_problem)
+                             recount_seats, rubric_problem, signup_problem,
+                             slot_problem, stage_problem)
 from backend.models import (Booking, Course, Exam, ExamSlot, Examiner, Rubric,
                             Student, User, db)
 
@@ -332,3 +333,125 @@ def examiner_status(examiner_id, action):
             db.session.commit()
             flash(f"{ex.user.name} is now {new_status}.", "success")
     return redirect(url_for("admin.examiner_detail", examiner_id=ex.id))
+
+# ================= Slots (M6) =================
+def _active(slot):
+    return [b for b in slot.bookings if b.status == "Booked"]
+
+
+@admin_bp.route("/slots")
+def slots():
+    exam_id = read_int(request.args.get("exam_id"))
+    status = request.args.get("status", "")
+    query = ExamSlot.query
+    if exam_id:
+        query = query.filter(ExamSlot.exam_id == exam_id)
+    if status in ("Available", "Full", "Cancelled"):
+        query = query.filter(ExamSlot.status == status)
+    rows = query.order_by(ExamSlot.slot_date.desc(), ExamSlot.start_time).all()
+    return render_template("admin/slots.html", slots=rows, exam_id=exam_id, status=status,
+                           exams=Exam.query.order_by(Exam.title).all())
+
+
+@admin_bp.route("/slots/<int:slot_id>/examiner", methods=["POST"])
+def slot_examiner(slot_id):
+    slot = db.get_or_404(ExamSlot, slot_id)
+    examiner = db.session.get(Examiner, read_int(request.form.get("examiner_id"), 0))
+
+    if slot.status == "Cancelled":
+        flash("A cancelled slot cannot be changed.", "warning")
+    elif examiner is None or examiner.status != "Approved" or examiner not in slot.exam.examiners:
+        flash("Choose an approved examiner who is assigned to this examination.", "danger")
+    elif examiner.id == slot.examiner_id:
+        flash("That examiner already owns this slot.", "info")
+    elif any(b.evaluation for b in slot.bookings):
+        flash("This slot already has evaluations, so its examiner cannot change.", "warning")
+    else:
+        v = {"slot_date": slot.slot_date, "start_time": slot.start_time,
+             "end_time": slot.end_time, "capacity": slot.capacity}
+        problem = slot_problem(slot.exam, examiner, v, slot.id)   # reuses the overlap check
+        if problem:
+            flash(problem, "danger")
+        else:
+            slot.examiner_id = examiner.id
+            db.session.commit()
+            flash(f"Slot now belongs to {examiner.user.name}.", "success")
+    return redirect(url_for("admin.slots"))
+
+
+@admin_bp.route("/slots/<int:slot_id>/cancel", methods=["POST"])
+def slot_cancel(slot_id):
+    slot = db.get_or_404(ExamSlot, slot_id)
+    if slot.status == "Cancelled":
+        flash("This slot is already cancelled.", "info")
+    elif _active(slot):
+        flash("This slot has active bookings. Reschedule those students first, then cancel it.", "warning")
+    else:
+        slot.status = "Cancelled"
+        slot.available_seats = 0
+        db.session.commit()
+        flash("Slot cancelled.", "success")
+    return redirect(url_for("admin.slots"))
+
+
+# ================= Bookings (M6) =================
+def _reschedule_block(booking):
+    """Returns a message if this booking cannot be moved, else None."""
+    if booking.status != "Booked":
+        return "Only active bookings can be rescheduled."
+    if booking.slot.exam.status not in ("Booking Open", "Closed"):
+        return "Bookings can only be rescheduled while the exam is Booking Open or Closed."
+    if booking.evaluation:
+        return "This booking has already been evaluated."
+    return None
+
+
+@admin_bp.route("/bookings")
+def bookings():
+    exam_id = read_int(request.args.get("exam_id"))
+    status = request.args.get("status", "")
+    query = Booking.query.join(ExamSlot)
+    if exam_id:
+        query = query.filter(ExamSlot.exam_id == exam_id)
+    if status in ("Booked", "Cancelled"):
+        query = query.filter(Booking.status == status)
+    rows = query.order_by(Booking.created_at.desc(), Booking.id.desc()).all()
+    return render_template("admin/bookings.html", bookings=rows, exam_id=exam_id, status=status,
+                           exams=Exam.query.order_by(Exam.title).all(),
+                           movable={b.id for b in rows if _reschedule_block(b) is None})
+
+
+@admin_bp.route("/bookings/<int:booking_id>/reschedule", methods=["GET", "POST"])
+def reschedule(booking_id):
+    booking = db.get_or_404(Booking, booking_id)
+    block = _reschedule_block(booking)
+    if block:
+        flash(block, "warning")
+        return redirect(url_for("admin.bookings"))
+
+    exam = booking.slot.exam
+    targets = (ExamSlot.query
+               .filter(ExamSlot.exam_id == exam.id, ExamSlot.status == "Available",
+                       ExamSlot.id != booking.slot_id)
+               .order_by(ExamSlot.slot_date, ExamSlot.start_time).all())
+
+    if request.method == "POST":
+        new = db.session.get(ExamSlot, read_int(request.form.get("slot_id"), 0))
+        if new is None or new.exam_id != exam.id:
+            flash("Choose a slot of the same examination.", "danger")
+        elif new.id == booking.slot_id:
+            flash("The student is already in that slot.", "info")
+        elif new.status == "Cancelled":
+            flash("That slot has been cancelled.", "danger")
+        elif new.available_seats <= 0 or new.status == "Full":
+            flash("That slot is full.", "danger")
+        else:
+            old = booking.slot
+            booking.slot = new
+            db.session.flush()
+            recount_seats(old)      # old slot gets its seat back
+            recount_seats(new)      # new slot loses one
+            db.session.commit()
+            flash("Booking rescheduled.", "success")
+            return redirect(url_for("admin.bookings"))
+    return render_template("admin/reschedule.html", booking=booking, exam=exam, targets=targets)

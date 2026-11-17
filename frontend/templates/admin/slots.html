@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="text-indigo mb-3">All slots</h3>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-2">
+    <div class="col-md-5">
+      <select name="exam_id" class="form-select">
+        <option value="">All examinations</option>
+        {% for e in exams %}
+        <option value="{{ e.id }}" {% if exam_id == e.id %}selected{% endif %}>{{ e.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="status" class="form-select">
+        <option value="">Any status</option>
+        {% for s in ['Available', 'Full', 'Cancelled'] %}
+        <option {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+      <button class="btn btn-indigo">Filter</button>
+      <a href="{{ url_for('admin.slots') }}" class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Exam</th><th>Date</th><th>Time</th><th>Examiner</th><th>Seats</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for s in slots %}
+      {% set active = s.bookings|selectattr('status', 'equalto', 'Booked')|list %}
+      <tr>
+        <td><a href="{{ url_for('admin.exam_detail', exam_id=s.exam_id) }}">{{ s.exam.title }}</a></td>
+        <td>{{ s.slot_date }}</td>
+        <td>{{ s.start_time.strftime('%H:%M') }} - {{ s.end_time.strftime('%H:%M') }}</td>
+        <td>
+          {% if s.status != 'Cancelled' %}
+          <form method="post" action="{{ url_for('admin.slot_examiner', slot_id=s.id) }}" class="d-flex gap-1">
+            <select name="examiner_id" class="form-select form-select-sm">
+              {% for e in s.exam.examiners if e.status == 'Approved' %}
+              <option value="{{ e.id }}" {% if e.id == s.examiner_id %}selected{% endif %}>{{ e.user.name }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-outline-secondary">Change</button>
+          </form>
+          {% else %}{{ s.examiner.user.name }}{% endif %}
+        </td>
+        <td>{{ active|length }} / {{ s.capacity }}</td>
+        <td><span class="badge bg-{{ s.status|badge }}">{{ s.status }}</span></td>
+        <td class="text-end">
+          {% if s.status != 'Cancelled' and not active %}
+          <form method="post" action="{{ url_for('admin.slot_cancel', slot_id=s.id) }}">
+            <button class="btn btn-sm btn-outline-danger">Cancel slot</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-muted py-4">No slots found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

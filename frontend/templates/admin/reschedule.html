@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-7"><div class="card p-4">
+  <h4 class="text-indigo mb-3">Reschedule booking</h4>
+  <table class="table table-sm">
+    <tr><th>Student</th><td>{{ booking.student.user.name }} ({{ booking.student.roll_number }})</td></tr>
+    <tr><th>Examination</th><td>{{ exam.title }}</td></tr>
+    <tr><th>Current slot</th><td>{{ booking.slot.slot_date }}, {{ booking.slot.start_time.strftime('%H:%M') }} - {{ booking.slot.end_time.strftime('%H:%M') }} ({{ booking.slot.examiner.user.name }})</td></tr>
+  </table>
+
+  <form method="post">
+    <label class="form-label">Move to</label>
+    {% for s in targets %}
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="slot_id" id="s{{ s.id }}" value="{{ s.id }}" required>
+      <label class="form-check-label" for="s{{ s.id }}">
+        {{ s.slot_date }}, {{ s.start_time.strftime('%H:%M') }} - {{ s.end_time.strftime('%H:%M') }}
+        with {{ s.examiner.user.name }} <span class="text-muted small">({{ s.available_seats }} seats left)</span>
+      </label>
+    </div>
+    {% else %}
+    <p class="text-muted">No other slot with free seats in this examination.</p>
+    {% endfor %}
+    <div class="mt-3">
+      {% if targets %}<button class="btn btn-indigo">Move student</button>{% endif %}
+      <a href="{{ url_for('admin.bookings') }}" class="btn btn-link">Cancel</a>
+    </div>
+  </form>
+</div></div></div>
+{% endblock %}

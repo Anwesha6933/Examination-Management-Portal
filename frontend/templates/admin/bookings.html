@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="text-indigo mb-3">All bookings</h3>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-2">
+    <div class="col-md-5">
+      <select name="exam_id" class="form-select">
+        <option value="">All examinations</option>
+        {% for e in exams %}
+        <option value="{{ e.id }}" {% if exam_id == e.id %}selected{% endif %}>{{ e.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="status" class="form-select">
+        <option value="">Any status</option>
+        {% for s in ['Booked', 'Cancelled'] %}
+        <option {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+      <button class="btn btn-indigo">Filter</button>
+      <a href="{{ url_for('admin.bookings') }}" class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Student</th><th>Exam</th><th>Date</th><th>Time</th><th>Examiner</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ b.student.user.name }} <span class="text-muted small">({{ b.student.roll_number }})</span></td>
+        <td>{{ b.slot.exam.title }}</td>
+        <td>{{ b.slot.slot_date }}</td>
+        <td>{{ b.slot.start_time.strftime('%H:%M') }} - {{ b.slot.end_time.strftime('%H:%M') }}</td>
+        <td>{{ b.slot.examiner.user.name }}</td>
+        <td><span class="badge bg-{{ b.status|badge }}">{{ b.status }}</span></td>
+        <td class="text-end">
+          {% if b.id in movable %}
+          <a href="{{ url_for('admin.reschedule', booking_id=b.id) }}" class="btn btn-sm btn-outline-secondary">Reschedule</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-muted py-4">No bookings found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
