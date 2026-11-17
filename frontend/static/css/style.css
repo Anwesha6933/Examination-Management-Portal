@@ -21,3 +21,13 @@ body { background: #f5f6fb; }
 .tile-green  { background: #059669; }
 .tile-amber  { background: #d97706; }
 .tile-rose   { background: #e11d48; }
+/* bookings-per-exam bars */
+.bar-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+.bar-label { width: 220px; flex: none; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; background: var(--indigo-soft); border-radius: 999px; height: 1.1rem; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--indigo); border-radius: 999px; }
+.bar-count { width: 2rem; text-align: right; font-weight: 600; }
+
+/* final touches */
+table.table tbody tr:hover { background: var(--indigo-soft); }
+.hero-img { max-width: 100%; height: auto; }

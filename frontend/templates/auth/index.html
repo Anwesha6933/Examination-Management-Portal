@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="text-center py-5">
+  <img src="{{ url_for('static', filename='images/exam.svg') }}" alt="" class="hero-img mb-3">
   <h1 class="display-5 fw-bold text-indigo">Examly</h1>
   <p class="lead text-muted">Examination management: slots, bookings and rubric-based grading.</p>
   <a href="{{ url_for('auth.login') }}" class="btn btn-indigo btn-lg me-2">Login</a>

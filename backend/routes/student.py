@@ -7,6 +7,11 @@ from flask import (Blueprint, Response, abort, flash, redirect, render_template,
 from flask_login import current_user
 from sqlalchemy import or_
 
+from backend.decorators import role_required
+from backend.helpers import (EXAM_TYPES, active_booking, booking_problem, can_book,
+                             can_cancel, clean, read_int, recount_seats)
+from backend.models import Booking, Course, Evaluation, Exam, ExamSlot, db
+
 student_bp = Blueprint("student", __name__, url_prefix="/student")
 student_bp.before_request(role_required("student"))
 

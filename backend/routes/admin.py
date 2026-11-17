@@ -29,7 +29,16 @@ def dashboard():
         ("Active bookings", Booking.query.filter_by(status="Booked").count(), "green"),
     ]
     pending = Examiner.query.filter_by(status="Pending").count()
-    return render_template("admin/dashboard.html", tiles=tiles, pending=pending)
+
+    counts = []
+    for e in Exam.query.order_by(Exam.id).all():
+        n = (Booking.query.join(ExamSlot)
+             .filter(ExamSlot.exam_id == e.id, Booking.status == "Booked").count())
+        counts.append((e, n))
+    top = max((n for _, n in counts), default=0)
+    bars = [{"title": e.title, "count": n, "pct": round(n * 100 / top) if top else 0}
+            for e, n in counts]
+    return render_template("admin/dashboard.html", tiles=tiles, pending=pending, bars=bars)
 
 
 # ================= Courses =================

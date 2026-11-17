@@ -7,6 +7,14 @@ from backend.models import Booking, Course, ExamSlot, Student, User, db
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ROLL_RE = re.compile(r"^[A-Za-z0-9]{6,20}$")
 
+PHONE_RE = re.compile(r"^[0-9+\-\s()]{7,20}$")
+
+
+def phone_problem(phone):
+    if phone and not PHONE_RE.match(phone):
+        return "Enter a valid phone number (7 to 20 digits, spaces, + or -)."
+    return None
+
 
 
 def clean(value):
@@ -42,19 +50,26 @@ def read_time(value):
 
 
 
-def signup_problem(role, name, email, password, confirm, roll_number="", department=""):
+def signup_problem(role, name, email, password, confirm, roll_number="", department="", phone=""):
     if role not in ("student", "examiner"):
         return "Please choose Student or Examiner."
     if not name:
         return "Name is required."
-    if not EMAIL_RE.match(email):
+    if len(name) > 100:
+        return "Name is too long (100 characters at most)."
+    if not EMAIL_RE.match(email) or len(email) > 120:
         return "Enter a valid email address."
     if User.query.filter_by(email=email).first():
         return "That email is already registered."
     if len(password) < 6:
         return "Password must be at least 6 characters."
+    if len(password) > 100:
+        return "Password is too long (100 characters at most)."
     if password != confirm:
         return "Passwords do not match."
+    problem = phone_problem(phone)
+    if problem:
+        return problem
     if role == "student":
         if not ROLL_RE.match(roll_number):
             return "Enter a valid roll number (6 to 20 letters or digits)."
@@ -63,6 +78,8 @@ def signup_problem(role, name, email, password, confirm, roll_number="", departm
     else:
         if not department:
             return "Department is required for examiners."
+        if len(department) > 100:
+            return "Department is too long (100 characters at most)."
     return None
 
 
@@ -100,6 +117,8 @@ def course_problem(code, name, status, course_id=None):
         return "Course code is required."
     if not name:
         return "Course name is required."
+    if len(code) > 20 or len(name) > 100:
+        return "Course code can be 20 characters and the name 100 at most."
     if status not in ("Active", "Inactive"):
         return "Choose Active or Inactive."
     other = Course.query.filter_by(code=code).first()
@@ -123,16 +142,18 @@ def read_exam_form(form):
 
 
 def exam_problem(v):
+    if len(v["title"]) > 150:
+        return "Title is too long (150 characters at most)."
     if v["course"] is None:
         return "Choose a course."
     if not v["title"]:
         return "Title is required."
     if v["exam_type"] not in EXAM_TYPES:
         return "Choose an exam type."
-    if v["duration_minutes"] is None or v["duration_minutes"] <= 0:
-        return "Duration must be a positive number of minutes."
-    if v["max_marks"] is None or v["max_marks"] <= 0:
-        return "Maximum marks must be a positive number."
+    if v["duration_minutes"] is None or not 1 <= v["duration_minutes"] <= 600:
+        return "Duration must be between 1 and 600 minutes."
+    if v["max_marks"] is None or not 1 <= v["max_marks"] <= 1000:
+        return "Maximum marks must be between 1 and 1000."
     dates = [v["slot_creation_start"], v["slot_creation_end"], v["booking_start"], v["booking_end"]]
     if None in dates:
         return "All four dates are required."
@@ -148,6 +169,8 @@ def exam_problem(v):
 def rubric_problem(exam, name, max_marks, weightage, rubric_id=None):
     if not name:
         return "Criterion name is required."
+    if len(name) > 100:
+        return "Criterion name is too long (100 characters at most)."
     if max_marks is None or max_marks <= 0:
         return "Marks must be a positive number."
     if weightage is None or not 0 <= weightage <= 100:

@@ -9,11 +9,14 @@ from backend.routes.auth import auth_bp
 from backend.routes.examiner import examiner_bp
 from backend.routes.student import student_bp
 from backend.seed import seed_admin
+from backend.routes.api import api_bp
+
 
 app = Flask(__name__, template_folder="frontend/templates", static_folder="frontend/static")
 app.config.from_object(Config)
 
 db.init_app(app)
+app.register_blueprint(api_bp)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "auth.login"
