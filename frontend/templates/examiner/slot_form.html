@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card p-4">
+  <h4 class="text-indigo mb-1">{{ 'Edit slot' if slot else 'New slot' }}</h4>
+  <p class="text-muted small">{{ exam.title }}. The slot date must be on or after {{ exam.booking_end }}.</p>
+  <form method="post">
+    <div class="mb-3"><label class="form-label">Date</label>
+      <input type="date" name="slot_date" class="form-control" value="{{ form.get('slot_date', '') }}" required></div>
+    <div class="row">
+      <div class="col-6 mb-3"><label class="form-label">Start time</label>
+        <input type="time" name="start_time" class="form-control" value="{{ form.get('start_time', '') }}" required></div>
+      <div class="col-6 mb-3"><label class="form-label">End time</label>
+        <input type="time" name="end_time" class="form-control" value="{{ form.get('end_time', '') }}" required></div>
+    </div>
+    <div class="mb-3"><label class="form-label">Capacity (students)</label>
+      <input type="number" name="capacity" class="form-control" value="{{ form.get('capacity', '') }}" required></div>
+    <button class="btn btn-indigo">Save</button>
+    <a href="{{ url_for('examiner.exam_detail', exam_id=exam.id) }}" class="btn btn-link">Cancel</a>
+  </form>
+</div></div></div>
+{% endblock %}

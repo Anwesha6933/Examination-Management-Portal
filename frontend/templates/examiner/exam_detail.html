@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h3 class="text-indigo mb-1">{{ exam.title }}</h3>
+    <span class="badge bg-{{ exam.status|badge }}">{{ exam.status }}</span>
+    <span class="text-muted ms-2">{{ exam.course.code }} - {{ exam.course.name }}</span>
+  </div>
+  {% if can_create %}
+  <a href="{{ url_for('examiner.slot_new', exam_id=exam.id) }}" class="btn btn-indigo">Add slot</a>
+  {% endif %}
+</div>
+
+<div class="card p-3 mb-3">
+  <table class="table table-sm mb-0">
+    <tr><th>Type</th><td>{{ exam.exam_type }}</td></tr>
+    <tr><th>Duration</th><td>{{ exam.duration_minutes }} min</td></tr>
+    <tr><th>Slot creation</th><td>{{ exam.slot_creation_start }} to {{ exam.slot_creation_end }}</td></tr>
+    <tr><th>Booking</th><td>{{ exam.booking_start }} to {{ exam.booking_end }}</td></tr>
+  </table>
+</div>
+
+{% if not can_create %}
+<div class="alert alert-secondary">Slot creation is not open for this examination right now.</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header bg-white"><strong class="text-indigo">My slots</strong></div>
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Date</th><th>Time</th><th>Capacity</th><th>Seats left</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for s in slots %}
+      <tr>
+        <td>{{ s.slot_date }}</td>
+        <td>{{ s.start_time.strftime('%H:%M') }} - {{ s.end_time.strftime('%H:%M') }}</td>
+        <td>{{ s.capacity }}</td><td>{{ s.available_seats }}</td>
+        <td><span class="badge bg-{{ s.status|badge }}">{{ s.status }}</span></td>
+        <td class="text-end">
+          {% if can_edit and s.status != 'Cancelled' and not s.bookings %}
+          <a href="{{ url_for('examiner.slot_edit', slot_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <form method="post" action="{{ url_for('examiner.slot_delete', slot_id=s.id) }}" class="d-inline">
+            <button class="btn btn-sm btn-outline-danger">Remove</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">You have not created any slots for this exam.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<a href="{{ url_for('examiner.exams') }}" class="btn btn-link mt-2">Back to my exams</a>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="text-indigo mb-3">My examinations</h3>
+<div class="card">
+  <table class="table mb-0 align-middle">
+    <thead><tr><th>Title</th><th>Course</th><th>Status</th><th>Slot creation</th><th>My slots</th><th></th></tr></thead>
+    <tbody>
+      {% for e in exams %}
+      <tr>
+        <td>{{ e.title }}</td><td>{{ e.course.code }}</td>
+        <td><span class="badge bg-{{ e.status|badge }}">{{ e.status }}</span></td>
+        <td>{{ e.slot_creation_start }} to {{ e.slot_creation_end }}</td>
+        <td>{{ counts[e.id] }}</td>
+        <td class="text-end"><a href="{{ url_for('examiner.exam_detail', exam_id=e.id) }}" class="btn btn-sm btn-outline-secondary">Open</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No examinations assigned to you yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

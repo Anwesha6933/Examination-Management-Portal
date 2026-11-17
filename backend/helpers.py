@@ -1,9 +1,8 @@
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import url_for
-
-from backend.models import Course, Student, User, db
+from backend.models import Course, ExamSlot, Student, User, db
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ROLL_RE = re.compile(r"^[A-Za-z0-9]{6,20}$")
@@ -169,4 +168,48 @@ def stage_problem(exam):
             return f"Rubric marks add up to {total:g}, but the exam maximum is {exam.max_marks}."
         if not exam.examiners:
             return "Assign at least one examiner first."
+    return None
+def can_create_slots(exam, today=None):
+    """Slots can be created only in Slot Creation status, inside the slot-creation dates."""
+    today = today or date.today()
+    return (exam.status == "Slot Creation"
+            and exam.slot_creation_start <= today <= exam.slot_creation_end)
+
+
+def can_edit_slots(exam, today=None):
+    """Slots can be edited or removed only before booking opens."""
+    today = today or date.today()
+    return exam.status == "Slot Creation" and today < exam.booking_start
+
+
+def read_slot_form(form):
+    return {
+        "slot_date": read_date(form.get("slot_date")),
+        "start_time": read_time(form.get("start_time")),
+        "end_time": read_time(form.get("end_time")),
+        "capacity": read_int(form.get("capacity")),
+    }
+
+
+def slot_problem(exam, examiner, v, slot_id=None):
+    """Returns a message, or None if the slot is fine."""
+    if v["slot_date"] is None:
+        return "Choose a valid date."
+    if v["start_time"] is None or v["end_time"] is None:
+        return "Enter valid start and end times."
+    if v["end_time"] <= v["start_time"]:
+        return "End time must be after the start time."
+    if v["capacity"] is None or v["capacity"] < 1:
+        return "Capacity must be at least 1."
+    if v["slot_date"] < exam.booking_end:
+        return f"The slot date cannot be before the booking end date ({exam.booking_end})."
+
+    same_day = ExamSlot.query.filter(
+        ExamSlot.examiner_id == examiner.id,
+        ExamSlot.slot_date == v["slot_date"],
+        ExamSlot.status != "Cancelled",
+    ).all()
+    for other in same_day:
+        if other.id != slot_id and v["start_time"] < other.end_time and other.start_time < v["end_time"]:
+            return "This overlaps another slot of yours on the same day."
     return None
